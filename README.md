@@ -1,25 +1,19 @@
-# Classroom Management Dashboard
+# Grade 11 – Visionaries Classroom Dashboard (2026–2027)
 
-A lightweight starter project plan for a classroom dashboard hosted on GitHub Pages.
+Static HTML/CSS/JavaScript starter for GitHub Pages.
 
-## Features in this starter
-- Responsive dashboard layout
-- Sidebar navigation
-- Dashboard overview cards
-- Announcements, calendar, assignments, grades, directory, attendance, governance, resources, and settings sections
-- Browser-local persistence with `localStorage`
-- Add and delete announcements, events, and assignments
-- Theme toggle
-- JSON export and import
+## Features
+- Monthly calendar; print dialog supports **Save as PDF** (landscape print layout)
+- Tasks and assignments with subject, due date, task type, status, priority, and notes
+- Subject list management
+- Class officer designations and editable officeholders
+- Class roster and committee assignment
+- Announcements, class resolutions, meetings, and classroom inventory
+- Settings for class name, school year, calendar week start, and theme
+- JSON backup export/import
 
-## Run locally
-This starter is plain HTML, CSS, and JavaScript, so no build step is required.
+## Run and publish
+Open `index.html` in a browser. To publish, upload all three app files to the root of a GitHub repository, then choose **Settings → Pages → Deploy from a branch → main → /(root)**.
 
-1. Download or clone the repository.
-2. Open `index.html` in a browser, or use VS Code's Live Server extension.
-3. To publish, push the files to a GitHub repository and enable GitHub Pages from the repository's Settings.
-
-## Important limitations
-- Data is stored in the current browser only and does not sync between devices.
-- Do not put sensitive student information, real grades, or attendance records on a public site.
-- This is a starter prototype, not a secure multi-user database application.
+## Data privacy
+This prototype stores data in the current browser only; it does not sync or authenticate users. Do not store real grades, sensitive attendance, medical/welfare, disciplinary, or private student records on a public GitHub Pages site. Classroom actions remain subject to the adviser, school rules, DepEd policies, and the class Constitution.

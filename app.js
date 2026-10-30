@@ -1,231 +1,78 @@
-const STORAGE_KEY = "classroom-dashboard-v1";
-const pageInfo = {
-  dashboard: ["Dashboard", "Good day, Visionaries.", "Your classroom information, organized in one place."],
-  announcements: ["Announcements", "Announcements", "Class notices, updates, and important reminders."],
-  calendar: ["Calendar", "Academic calendar", "Keep track of important dates and activities."],
-  assignments: ["Assignments", "Assignments & projects", "Organize requirements and keep deadlines in sight."],
-  grades: ["Grade Tracker", "Grade tracker", "A personal workspace for monitoring academic progress."],
-  directory: ["Class Directory", "Class directory", "Keep class roles and responsibilities organized."],
-  attendance: ["Attendance", "Attendance", "Attendance tracking prototype for authorized use."],
-  governance: ["Class Governance", "Class governance", "Document meetings, resolutions, committees, and projects."],
-  resources: ["Resources", "Learning resources", "Keep useful learning links easy to find."],
-  settings: ["Settings", "Settings", "Customize the dashboard and manage your local data."]
-};
-const defaultData = { announcements: [], events: [], assignments: [], resources: [], directory: [], resolutions: [], meetings: [], attendance: [], grades: [] };
-let data = loadData();
-let currentPage = "dashboard";
-let currentKind = "announcements";
 
-function loadData() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    return saved && typeof saved === "object" ? { ...structuredClone(defaultData), ...saved } : structuredClone(defaultData);
-  } catch { return structuredClone(defaultData); }
+const KEY="visionaries-dashboard-v2";
+const defaults={
+ settings:{className:"Grade 11 – Visionaries",schoolYear:"2026–2027",weekStart:"monday",theme:"light"},
+ subjects:["General Mathematics","General Science","Media and Information Literacy","Mabisang Komunikasyon","Life and Career Skills","Environmental Literacy","Computer Systems Servicing","Physical Education and Health"],
+ officers:[
+ ["President","","Presides over class affairs and coordinates officers, subject to adviser supervision."],
+ ["Vice President","","Assists the President and performs delegated duties."],
+ ["Secretary","","Maintains official minutes, records, and the class roster; protects confidential records."],
+ ["Treasurer","","Maintains records of collections, disbursements, and class funds."],
+ ["Auditor","","Checks financial records and maintains an inventory of class property."],
+ ["Public Information Officer","","Disseminates verified announcements and coordinates the Information Committee."],
+ ["Peace Officer","","Supports classroom order and coordinates with the Discipline Committee."],
+ ["Muse","","Represents the class in approved school events and ceremonial activities."],
+ ["Escort","","Represents the class in approved school events and ceremonial activities."]
+ ].map(x=>({title:x[0],name:x[1],duties:x[2]})),
+ committees:[
+ {name:"Design Committee",purpose:"Prepares visual designs, decorations, layouts, and creative materials; manages design supplies."},
+ {name:"Cleanliness Committee",purpose:"Monitors cleanliness, sanitation, order, and waste segregation."},
+ {name:"Socialization Committee",purpose:"Plans class projects, celebrations, and social activities with required approvals."},
+ {name:"Information Committee",purpose:"Maintains the classroom Information Board and assists with official announcements."},
+ {name:"Discipline Committee",purpose:"Supports peace and discipline, receives referrals, and coordinates with the Peace Officer and adviser."},
+ {name:"Classroom Task Force to Combat Academic Insufficiency",purpose:"Optional academic-support proposal: coordinate deadline reminders and peer study sessions without publishing grades or shaming members. Seek adviser approval before formal adoption."}
+ ],tasks:[],events:[],announcements:[],roster:[],resolutions:[],meetings:[],inventory:[]
+};
+const clone=x=>JSON.parse(JSON.stringify(x));let db=load(),page="dashboard",kind="",cal=new Date(),editIndex=-1;
+const pages={dashboard:["Overview","Classroom Overview","Academic work, class information, and activities in one place."],calendar:["Monthly Calendar","Monthly Calendar","View deadlines, class events, and reminders."],tasks:["Tasks & Assignments","Tasks & Assignments","Track every requirement by subject, deadline, type, and status."],subjects:["Subjects","Subject Management","Maintain the subject list used for assignments."],announcements:["Announcements","Announcements & Reminders","Share academic reminders and verified class information."],officers:["Class Officers","Class Officers & Designations","Manage official roles and responsibilities."],roster:["Class Roster","Class Roster","Maintain class membership and committee assignments."],committees:["Committees","Class Committees","Organize standing committees and classroom initiatives."],governance:["Resolutions & Meetings","Class Governance","Record class resolutions, minutes, and action items."],inventory:["Class Inventory","Classroom Property & Inventory","Track classroom supplies and property."],settings:["Settings & Backup","Settings & Backup","Configure the workspace and manage backups."]};
+const nav=[["dashboard","⌂"],["calendar","▦"],["tasks","✓"],["subjects","▤"],["announcements","◉"],["officers","♙"],["roster","☷"],["committees","▦"],["governance","⚖"],["inventory","▧"],["settings","⚙"]];
+function load(){try{let x=JSON.parse(localStorage.getItem(KEY)||"null");return x?{...clone(defaults),...x,settings:{...defaults.settings,...x.settings}}:clone(defaults)}catch{return clone(defaults)}}
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function arr(k){return Array.isArray(db[k])?db[k]:[]}function id(){return crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()}
+function today(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function date(s){if(!s)return "";let d=new Date(s.length===10?s+"T12:00:00":s);return isNaN(d) ? s:d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}
+function badge(s){return s?`<span class="badge ${["Completed","Submitted","Adopted","Implemented"].includes(s)?"green":["Urgent","High"].includes(s)?"orange":""}">${esc(s)}</span>`:""}
+function panel(t,sub,body,extra=""){return `<section class="panel ${extra}"><div class="panelhead"><div><h2>${t}</h2><p class="sub">${sub||""}</p></div></div>${body}</section>`}
+function empty(t="Nothing here yet.",s="Add a record to get started."){return `<div class="empty"><b>${t}</b>${s}</div>`}
+function stat(t,n,note){return `<div class="stat"><label>${t}</label><div class="num">${n}</div><div class="muted">${note}</div></div>`}
+function setPage(p){page=pages[p]?p:"dashboard";document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("active",b.dataset.page===page));document.getElementById("crumb").textContent=pages[page][0];document.getElementById("title").textContent=pages[page][1];document.getElementById("desc").textContent=pages[page][2];document.getElementById("yearLabel").textContent="SCHOOL YEAR "+db.settings.schoolYear;document.querySelector("#sidebar h2").firstChild.textContent=db.settings.className.toUpperCase()+" ";document.getElementById("sidebar").classList.remove("open");render()}
+function cards(k){if(!arr(k).length)return empty("No records yet.","Use Add to create your first record.");return arr(k).map(x=>`<article class="item"><div class="itemtop"><div><div class="itemtitle">${esc(x.title||x.name||"Untitled")}</div><div class="meta">${x.subject?badge(x.subject):""}${x.category?badge(x.category):""}${x.status?badge(x.status):""}${x.priority?badge(x.priority):""}${x.date?date(x.date):""}${x.dueDate?"Due "+date(x.dueDate):""}</div></div><button class="delete" data-del="${k}" data-id="${esc(x.id)}">×</button></div>${x.details?`<p>${esc(x.details)}</p>`:""}${x.link?`<div class="meta"><a href="${esc(x.link)}" target="_blank" rel="noopener noreferrer">Open resource ↗</a></div>`:""}</article>`).join("")}
+function preview(list){return list.length?list.slice(0,4).map(x=>`<div class="row"><div><b>${esc(x.title||x.name)}</b><p>${esc(x.subject||x.details||x.date||"")}</p></div>${badge(x.status)}</div>`).join(""):empty()}
+function dashboard(){let todo=arr("tasks").filter(x=>!["Completed","Submitted"].includes(x.status)).length,done=arr("tasks").filter(x=>["Completed","Submitted"].includes(x.status)).length;return `<div class="stats">${stat("Upcoming events",arr("events").filter(x=>!x.date||x.date>=today()).length,"Saved calendar events")}${stat("Pending tasks",todo,"Requirements not completed")}${stat("Subjects",db.subjects.length,"Available in task forms")}${stat("Task completion",arr("tasks").length?Math.round(done/arr("tasks").length*100)+"%":"0%",`${done} of ${arr("tasks").length} complete`)}</div><div class="twocol"><div>${panel("Upcoming calendar items","Events and task deadlines",preview([...arr("events"),...arr("tasks")].sort((a,b)=>(a.date||a.dueDate||"").localeCompare(b.date||b.dueDate||""))))}${panel("Announcements","Latest class notices",preview(arr("announcements").slice().reverse()))}</div><div>${panel("Task list","Recent assignments",preview(arr("tasks").slice().reverse()))}${panel("Quick actions","Create a new record",`<div class="quickgrid"><button class="quick" data-add="tasks"><span>✓</span><b>Assignment / task</b><small>Subject and due date</small></button><button class="quick" data-add="events"><span>▦</span><b>Calendar event</b><small>Class activity or deadline</small></button><button class="quick" data-add="announcements"><span>◉</span><b>Announcement</b><small>Reminder or notice</small></button><button class="quick" data-go="officers"><span>♙</span><b>Class officers</b><small>Manage designations</small></button></div>`)}</div></div>`}
+function list(k,label){return `<div class="toolbar"><input id="search" placeholder="Search records…"><button class="primary" data-add="${k}">＋ Add ${label}</button></div><div id="listBody">${cards(k)}</div>`}
+function calendar(){let y=cal.getFullYear(),m=cal.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),off=db.settings.weekStart==="monday"?(first.getDay()+6)%7:first.getDay(),total=Math.ceil((off+last.getDate())/7)*7,heads=db.settings.weekStart==="monday"?["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];let h=`<div class="calendarbar"><div class="noprint"><button id="prev">← Prev</button> <button id="now">Today</button> <button id="next">Next →</button></div><div class="monthtitle">${cal.toLocaleDateString(undefined,{month:"long",year:"numeric"})}</div><div class="noprint"><button id="print">Export / Print PDF</button> <button class="primary" data-add="events">＋ Add event</button></div></div><div class="calwrap"><table class="calendar"><thead><tr>${heads.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>`;for(let i=0;i<total;i++){if(i%7===0)h+="<tr>";let d=new Date(y,m,i-off+1),iso=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`,out=d.getMonth()!==m;let items=[...arr("events").map(x=>({...x,_k:"events"})),...arr("tasks").map(x=>({...x,title:(x.subject?x.subject+" · ":"")+x.title,date:x.dueDate,_k:"tasks"})),...arr("announcements").filter(x=>x.date).map(x=>({...x,_k:"announcements"}))].filter(x=>x.date===iso);h+=`<td class="${out?"outside":""} ${iso===today()?"today":""}"><b>${d.getDate()}</b>${items.map(x=>`<span class="event ${x._k==="tasks"?"task":x._k==="announcements"?"notice":""}" title="${esc(x.details||"")}">${esc(x.title)}</span>`).join("")}${!out?`<button class="noprint" data-date="${iso}">＋</button>`:""}</td>`;if(i%7===6)h+="</tr>"}h+="</tbody></table></div><div class=\"legend\">Blue: class event · Green: assignment/task · Amber: announcement</div>";return panel("Monthly schedule","Calendar includes events, assignment deadlines, and dated announcements",h,"calendarpanel")}
+function subjects(){return panel("Manage subjects","The list below powers the subject field on assignments.",`<div class="toolbar"><input id="subjectInput" placeholder="New subject name"><button class="primary" id="addSubject">＋ Add subject</button></div><div class="tablewrap"><table class="data"><tr><th>#</th><th>Subject</th><th></th></tr>${db.subjects.map((s,i)=>`<tr><td>${i+1}</td><td>${esc(s)}</td><td><button data-subdel="${i}">Remove</button></td></tr>`).join("")}</table></div>`)}
+function officers(){return panel("Officer designations","Edit names and duties; confirm assignments with the class and adviser.",`<div class="tablewrap"><table class="data"><tr><th>Designation</th><th>Officeholder</th><th></th></tr>${db.officers.map((o,i)=>`<tr><td>${esc(o.title)}</td><td>${esc(o.name||"Not assigned")}</td><td><button data-officer="${i}">Edit</button></td></tr>`).join("")}</table></div><h3 style="margin-top:18px">Responsibilities</h3>${db.officers.map(o=>`<div class="row"><div><b>${esc(o.title)}</b><p>${esc(o.duties)}</p></div></div>`).join("")}`)}
+function roster(){return panel("Class roster","Privacy warning: avoid real identifiable records on a public site.",`<div class="toolbar"><input id="rosterSearch" placeholder="Search roster…"><button class="primary" data-add="roster">＋ Add member</button></div><div class="tablewrap"><table class="data" id="rosterTable"><tr><th>#</th><th>Name</th><th>Cluster</th><th>Committee</th><th></th></tr>${arr("roster").map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.name)}</td><td>${esc(x.cluster||"—")}</td><td>${esc(x.committee||"Unassigned")}</td><td><button data-del="roster" data-id="${esc(x.id)}">×</button></td></tr>`).join("")}</table></div>`)}
+function committees(){return panel("Standing committees","Based on the classroom Constitution",db.committees.map(c=>`<div class="row"><div><b>${esc(c.name)}</b><p>${esc(c.purpose)}</p></div></div>`).join("")+`<p class="muted">The academic-support task force is a proposed optional feature. Obtain adviser approval before treating it as a formal committee. Academic support should be private, supportive, and non-punitive.`)}
+function governance(){return `<div class="twocol">${panel("Class resolutions","Proposals and adopted decisions",`<div class="toolbar"><button class="primary" data-add="resolutions">＋ Add resolution</button></div>${cards("resolutions")}`)}${panel("Meeting records","Minutes, agendas, and action items",`<div class="toolbar"><button class="primary" data-add="meetings">＋ Add meeting</button></div>${cards("meetings")}`)}</div>`}
+function inventory(){return panel("Class inventory","For accountability, record condition and custodian.",`<div class="toolbar"><button class="primary" data-add="inventory">＋ Add item</button></div>${cards("inventory")}`)}
+function settings(){return `${panel("Workspace configuration","Customize this browser's dashboard.",`<form id="settingsForm"><div class="formgrid">${field("Class name","className",db.settings.className)}${field("School year","schoolYear",db.settings.schoolYear)}<div class="field"><label>Calendar week starts</label><select name="weekStart"><option value="monday" ${db.settings.weekStart==="monday"?"selected":""}>Monday</option><option value="sunday" ${db.settings.weekStart==="sunday"?"selected":""}>Sunday</option></select></div><div class="field"><label>Theme</label><select name="theme"><option value="light" ${db.settings.theme==="light"?"selected":""}>Light</option><option value="dark" ${db.settings.theme==="dark"?"selected":""}>Dark</option></select></div></div><button class="primary">Save settings</button></form>`)}${panel("Backup and restore","Download a backup before changing browsers or clearing site data.",`<p><button id="export">Export JSON</button> <button id="import">Import JSON</button> <button id="reset">Reset local data</button></p><p class="muted">Data stays in this browser and does not sync across devices. Do not store real grades, private attendance, health/welfare information, or disciplinary records. This prototype has no login or access control.</p>`)}`}
+function field(label,name,value="",type="text",opts={}){return `<div class="field ${opts.full?"full":""}"><label>${label}</label><input name="${name}" type="${type}" value="${esc(value)}" ${opts.required?"required":""} ${opts.placeholder?`placeholder="${esc(opts.placeholder)}"`:""}></div>`}
+function render(){let fn={dashboard,calendar,tasks:()=>list("tasks","task / assignment"),subjects,announcements:()=>list("announcements","announcement"),officers,roster,committees,governance,inventory,settings};document.getElementById("root").innerHTML=fn[page]();bind()}
+function open(type,extra={}){kind=type;editIndex=extra.index??-1;let f="",title="Add record",subjects=db.subjects.length?db.subjects:["Other / not specified"];const sel=(label,name,options,value="")=>`<div class="field"><label>${label}</label><select name="${name}">${options.map(o=>`<option ${o===value?"selected":""}>${esc(o)}</option>`).join("")}</select></div>`;const txt=(label,name,type="text",opts={})=>field(label,name,opts.value||"",type,opts);
+if(type==="tasks"){title="Add assignment or task";f=txt("Title","title","text",{required:true,full:true})+sel("Subject","subject",subjects)+txt("Due date","dueDate","date",{value:extra.date||""})+sel("Task type","category",["Written Work","Performance Task","Quarterly Assessment","Project","Activity","Review / Study","Other"])+sel("Status","status",["Not Started","In Progress","Completed","Submitted","Returned"])+sel("Priority","priority",["Normal","High","Urgent"])+txt("Instructions / notes","details","text",{full:true})+txt("Reference URL (optional)","link","url",{full:true})}
+else if(type==="events"){title="Add calendar event";f=txt("Event title","title","text",{required:true,full:true})+txt("Date","date","date",{required:true,value:extra.date||""})+sel("Category","category",["Class Activity","Examination","School Event","Meeting","Deadline","Holiday / No Classes","Other"])+sel("Subject","subject",["— Not subject-specific —",...subjects])+txt("Details","details","text",{full:true})}
+else if(type==="announcements"){title="Add announcement";f=txt("Title","title","text",{required:true,full:true})+txt("Date (optional)","date","date",{value:extra.date||""})+sel("Category","category",["Academic Reminder","Examination","School Activity","Class Officers","Urgent Notice","General"])+txt("Details","details","text",{full:true})}
+else if(type==="roster"){title="Add class member";f=txt("Name","name","text",{required:true,full:true})+sel("Cluster","cluster",["ICT-CSS","ASSH","Other / not specified"])+sel("Committee","committee",["Unassigned",...db.committees.map(x=>x.name)])}
+else if(type==="resolutions"){title="Add class resolution";f=txt("Resolution title","title","text",{required:true,full:true})+txt("Date","date","date",{value:extra.date||""})+sel("Status","status",["Draft","Proposed","Adopted","Implemented","Archived"])+txt("Resolution number","category","text",{placeholder:"e.g. CR-2026-01"})+txt("Text / purpose / vote summary","details","text",{full:true})}
+else if(type==="meetings"){title="Add meeting record";f=txt("Meeting title","title","text",{required:true,full:true})+txt("Date","date","date",{required:true,value:extra.date||""})+sel("Meeting type","category",["General Assembly","Officers' Meeting","Committee Meeting","Project Meeting","Other"])+txt("Minutes / agenda / action items","details","text",{full:true})}
+else if(type==="inventory"){title="Add inventory item";f=txt("Item name","title","text",{required:true,full:true})+txt("Quantity","quantity","number",{value:"1"})+sel("Condition","category",["Good","Needs repair","Damaged","For replenishment"])+txt("Custodian / location","custodian")+txt("Notes","details","text",{full:true})}
+else if(type==="officer"){title="Edit officer";let o=db.officers[editIndex];f=txt("Designation","title","text",{value:o.title,required:true,full:true})+txt("Assigned member","name","text",{value:o.name,full:true})+txt("Duties","duties","text",{value:o.duties,full:true})}
+document.getElementById("modalTitle").textContent=title;document.getElementById("fields").innerHTML=`<div class="formgrid">${f}</div>`;document.getElementById("shade").classList.remove("hidden")}
+function bind(){document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>setPage(b.dataset.go));document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>open(b.dataset.add));document.querySelectorAll("[data-date]").forEach(b=>b.onclick=()=>open("events",{date:b.dataset.date}));document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{if(confirm("Delete this record?")){let k=b.dataset.del;db[k]=arr(k).filter(x=>x.id!==b.dataset.id);save();render()}});document.querySelectorAll("[data-officer]").forEach(b=>b.onclick=()=>open("officer",{index:+b.dataset.officer}));document.querySelectorAll("[data-subdel]").forEach(b=>b.onclick=()=>{db.subjects.splice(+b.dataset.subdel,1);save();render()});
+let s=document.getElementById("search");if(s)s.oninput=()=>{let k=page==="tasks"?"tasks":"announcements";document.getElementById("listBody").innerHTML=arr(k).filter(x=>JSON.stringify(x).toLowerCase().includes(s.value.toLowerCase())).map(x=>`<article class="item"><b>${esc(x.title)}</b><p>${esc(x.details||"")}</p></article>`).join("")||empty("No matches.")};
+let rs=document.getElementById("rosterSearch");if(rs)rs.oninput=()=>document.querySelectorAll("#rosterTable tr").forEach((r,i)=>{if(i)r.style.display=r.textContent.toLowerCase().includes(rs.value.toLowerCase())?"":"none"});
+let as=document.getElementById("addSubject");if(as)as.onclick=()=>{let v=document.getElementById("subjectInput").value.trim();if(v&&!db.subjects.includes(v)){db.subjects.push(v);save();render()}};
+if(document.getElementById("prev"))document.getElementById("prev").onclick=()=>{cal=new Date(cal.getFullYear(),cal.getMonth()-1,1);render()};if(document.getElementById("next"))document.getElementById("next").onclick=()=>{cal=new Date(cal.getFullYear(),cal.getMonth()+1,1);render()};if(document.getElementById("now"))document.getElementById("now").onclick=()=>{cal=new Date();render()};if(document.getElementById("print"))document.getElementById("print").onclick=()=>window.print();
+let sf=document.getElementById("settingsForm");if(sf)sf.onsubmit=e=>{e.preventDefault();db.settings={...db.settings,...Object.fromEntries(new FormData(sf))};save();document.body.classList.toggle("dark",db.settings.theme==="dark");setPage("settings")};
+if(document.getElementById("export"))document.getElementById("export").onclick=exportData;if(document.getElementById("import"))document.getElementById("import").onclick=()=>document.getElementById("importFile").click();if(document.getElementById("reset"))document.getElementById("reset").onclick=()=>{if(confirm("Reset all local records?")){db=clone(defaults);save();setPage("dashboard")}}
 }
-function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
-function escapeHTML(value = "") {
-  return String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
-}
-function dateLabel(value) {
-  if (!value) return "No date set";
-  const date = new Date(value.length === 10 ? `${value}T12:00:00` : value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
-function all(kind) { return Array.isArray(data[kind]) ? data[kind] : []; }
-function setPage(page) {
-  currentPage = pageInfo[page] ? page : "dashboard";
-  document.querySelectorAll(".nav-item").forEach(btn => btn.classList.toggle("active", btn.dataset.page === currentPage));
-  document.getElementById("pageCrumb").textContent = pageInfo[currentPage][0];
-  document.getElementById("pageTitle").textContent = pageInfo[currentPage][1];
-  document.getElementById("pageDescription").textContent = pageInfo[currentPage][2];
-  document.getElementById("welcomeEyebrow").textContent = currentPage === "dashboard" ? "CLASS WORKSPACE" : "CLASSROOM TOOLS";
-  document.getElementById("sidebar").classList.remove("open");
-  renderPage();
-}
-function statCard(label, value, icon, note) {
-  return `<article class="stat-card"><div class="stat-top"><span>${label}</span><span class="stat-icon">${icon}</span></div><div class="stat-number">${value}</div><div class="stat-foot">${note}</div></article>`;
-}
-function panel(title, subtitle, content, action = "") {
-  return `<section class="panel"><div class="panel-heading"><div><h2>${title}</h2>${subtitle ? `<p>${subtitle}</p>` : ""}</div>${action}</div>${content}</section>`;
-}
-function empty(message, detail = "Add your first item to get started.") {
-  return `<div class="empty-state"><strong>${message}</strong>${detail}</div>`;
-}
-function previewRows(kind, icon, limit = 4) {
-  const items = [...all(kind)].sort((a,b) => (b.createdAt || "").localeCompare(a.createdAt || "")).slice(0, limit);
-  if (!items.length) return empty("Nothing here yet.");
-  return `<div class="list">${items.map(item => `<div class="list-row"><div class="list-icon">${icon}</div><div class="list-main"><strong>${escapeHTML(item.title)}</strong><p>${escapeHTML(item.details || item.date || "No additional details")}</p></div>${item.status ? `<span class="badge">${escapeHTML(item.status)}</span>` : ""}</div>`).join("")}</div>`;
-}
-function dashboardPage() {
-  const pending = all("assignments").filter(x => !["Completed","Submitted"].includes(x.status)).length;
-  const upcoming = all("events").filter(x => !x.date || x.date >= new Date().toISOString().slice(0,10)).length;
-  const recentAnnouncements = all("announcements").length;
-  const complete = all("assignments").filter(x => ["Completed","Submitted"].includes(x.status)).length;
-  const total = all("assignments").length;
-  const progress = total ? Math.round(complete / total * 100) : 0;
-  return `<div class="stats-grid">
-    ${statCard("Upcoming activities", upcoming, "▦", "Events in your calendar")}
-    ${statCard("Pending assignments", pending, "✓", "Requirements to work on")}
-    ${statCard("Announcements", recentAnnouncements, "▤", "Saved class notices")}
-    ${statCard("Task completion", `${progress}%`, "↗", `${complete} of ${total} completed`)}
-  </div>
-  <div class="content-grid"><div>
-    ${panel("Upcoming activities", "Your saved calendar events", previewRows("events", "▦"), `<button class="text-button" data-go="calendar">View calendar →</button>`)}
-    ${panel("Recent announcements", "Latest class notices", previewRows("announcements", "▤"), `<button class="text-button" data-go="announcements">View all →</button>`)}
-  </div><div>
-    ${panel("Assignments", "Your current requirements", previewRows("assignments", "✓"), `<button class="text-button" data-go="assignments">View all →</button>`)}
-    ${panel("Quick actions", "Create a new record", `<div class="action-grid">
-      <button class="action-tile" data-add="announcements"><span>▤</span><strong>Announcement</strong><small>Share a class notice</small></button>
-      <button class="action-tile" data-add="events"><span>▦</span><strong>Calendar event</strong><small>Save an important date</small></button>
-      <button class="action-tile" data-add="assignments"><span>✓</span><strong>Assignment</strong><small>Track a requirement</small></button>
-      <button class="action-tile" data-go="resources"><span>▧</span><strong>Resources</strong><small>Browse learning links</small></button>
-    </div>`)}
-  </div></div>`;
-}
-const kindTitles = { announcements: "announcement", events: "calendar event", assignments: "assignment", resources: "resource", directory: "directory entry", resolutions: "class resolution", meetings: "meeting", attendance: "attendance record", grades: "grade record" };
-function renderCards(kind) {
-  const items = [...all(kind)].sort((a,b) => (a.date || b.createdAt || "").localeCompare(b.date || a.createdAt || ""));
-  if (!items.length) return empty(`No ${kindTitles[kind] || "items"} yet.`, "Use the Add button to create your first record.");
-  return items.map(item => `<article class="item-card">
-    <div class="item-card-top"><div><h3>${escapeHTML(item.title)}</h3><div class="item-meta">${item.category ? `<span class="badge">${escapeHTML(item.category)}</span>` : ""}${item.status ? `<span class="badge ${item.status === "Completed" || item.status === "Submitted" ? "green" : ""}">${escapeHTML(item.status)}</span>` : ""}${item.date ? `<span>${dateLabel(item.date)}</span>` : ""}${item.subject ? `<span>${escapeHTML(item.subject)}</span>` : ""}</div></div><button class="delete-button" title="Delete item" aria-label="Delete ${escapeHTML(item.title)}" data-delete="${kind}" data-id="${escapeHTML(item.id)}">×</button></div>
-    ${item.details ? `<p>${escapeHTML(item.details)}</p>` : ""}
-    ${item.link ? `<div class="item-meta"><a href="${escapeHTML(item.link)}" target="_blank" rel="noopener noreferrer">Open resource ↗</a></div>` : ""}
-  </article>`).join("");
-}
-function listPage(kind, description) {
-  return `<div class="toolbar"><input class="search-input" id="listSearch" placeholder="Search ${kindTitles[kind] || "items"}..." aria-label="Search items"><button class="primary-button" data-add="${kind}">＋ Add ${kindTitles[kind] || "item"}</button></div><div id="itemsContainer">${renderCards(kind)}</div>`;
-}
-function gradesPage() {
-  return `${panel("Grade tracker", "Personal tracking only. Do not enter sensitive data on a public device.", `<p class="muted">This starter provides the section layout. A complete grade calculator should include subject-specific grading weights, score entry, and the applicable school conversion table.</p><div class="action-grid" style="margin-top:16px"><button class="action-tile" data-add="grades"><span>＋</span><strong>Add grade record</strong><small>Record a personal academic note</small></button><button class="action-tile" data-go="settings"><span>⚙</span><strong>Data settings</strong><small>Export or import local data</small></button></div>`)}<div id="itemsContainer">${renderCards("grades")}</div>`;
-}
-function directoryPage() {
-  return `${panel("Directory privacy", "", `<p class="muted">Use sample or non-sensitive information in this prototype. A public GitHub Pages site is not appropriate for private student details.</p>`)}${listPage("directory")}`;
-}
-function attendancePage() {
-  return `${panel("Privacy notice", "", `<p class="muted">Attendance records are sensitive. This demo stores data in this browser and does not provide authentication or secure access controls. Do not enter real student attendance in a public deployment.</p>`)}${listPage("attendance")}`;
-}
-function governancePage() {
-  return `<div class="content-grid"><div>${panel("Class resolutions", "Record decisions and initiatives", listPage("resolutions"))}</div><div>${panel("Meetings", "Agendas, minutes, and action items", listPage("meetings"))}</div></div>`;
-}
-function settingsPage() {
-  return `${panel("Appearance", "Personalize your workspace", `<div class="settings-row"><div><strong>Dark theme</strong><p>Switch between light and dark appearance.</p></div><button class="secondary-button" id="settingsTheme">Toggle theme</button></div>`)}
-  ${panel("Data management", "Records are saved in this browser only", `<div class="settings-row"><div><strong>Export a backup</strong><p>Download your dashboard records as a JSON file.</p></div><button class="secondary-button" id="exportButton">Export JSON</button></div>
-  <div class="settings-row"><div><strong>Import a backup</strong><p>Restore records from a previously exported JSON file.</p></div><button class="secondary-button" id="importButton">Import JSON</button></div>
-  <div class="settings-row"><div><strong>Reset local data</strong><p>Delete records stored by this prototype in the current browser.</p></div><button class="secondary-button" id="resetButton">Reset data</button></div>`)}
-  ${panel("Class information", "Prototype defaults", `<div class="settings-row"><div><strong>Class name</strong><p>11 – Visionaries</p></div><span class="badge">Editable in source</span></div><div class="settings-row"><div><strong>School year</strong><p>2026–2027</p></div><span class="badge">Prototype</span></div>`)}`;
-}
-function renderPage() {
-  const root = document.getElementById("pageRoot");
-  const pages = {
-    dashboard: dashboardPage,
-    announcements: () => listPage("announcements"),
-    calendar: () => listPage("events"),
-    assignments: () => listPage("assignments"),
-    grades: gradesPage,
-    directory: directoryPage,
-    attendance: attendancePage,
-    governance: governancePage,
-    resources: () => listPage("resources"),
-    settings: settingsPage
-  };
-  root.innerHTML = (pages[currentPage] || dashboardPage)();
-  bindPageActions();
-}
-function addItem(kind, formData) {
-  const item = Object.fromEntries(formData.entries());
-  item.id = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
-  item.createdAt = new Date().toISOString();
-  if (kind === "assignments" && !item.status) item.status = "Not Started";
-  if (kind === "events" && !item.category) item.category = "Class Activity";
-  data[kind].unshift(item);
-  saveData();
-  closeModal();
-  renderPage();
-}
-function openModal(kind) {
-  currentKind = kind;
-  const title = kindTitles[kind] || "item";
-  document.getElementById("modalTitle").textContent = `Add ${title}`;
-  const extra = document.getElementById("extraFields");
-  let fields = "";
-  if (["events","assignments","attendance","grades"].includes(kind)) fields += `<label for="itemDate">${kind === "assignments" ? "Due date" : "Date"}</label><input id="itemDate" name="date" type="date">`;
-  if (["events","assignments","resources"].includes(kind)) fields += `<label for="itemCategory">${kind === "assignments" ? "Subject" : "Category"}</label><input id="itemCategory" name="${kind === "assignments" ? "subject" : "category"}" maxlength="80" placeholder="${kind === "assignments" ? "e.g. General Mathematics" : "e.g. School Activity"}">`;
-  if (kind === "assignments") fields += `<label for="itemStatus">Status</label><select id="itemStatus" name="status"><option>Not Started</option><option>In Progress</option><option>Completed</option><option>Submitted</option><option>Returned</option></select>`;
-  if (kind === "announcements") fields += `<label for="itemCategory">Category</label><select id="itemCategory" name="category"><option>General Announcement</option><option>Academic Reminder</option><option>Examination</option><option>School Activity</option><option>Class Officers</option><option>Urgent Notice</option></select>`;
-  if (kind === "resources") fields += `<label for="itemLink">Resource URL</label><input id="itemLink" name="link" type="url" placeholder="https://...">`;
-  if (kind === "directory") fields += `<label for="itemCategory">Position / Committee</label><input id="itemCategory" name="category" placeholder="e.g. Class Secretary">`;
-  if (kind === "resolutions") fields += `<label for="itemCategory">Resolution status</label><select id="itemCategory" name="category"><option>Draft</option><option>Proposed</option><option>Adopted</option><option>Implemented</option><option>Archived</option></select>`;
-  if (kind === "meetings") fields += `<label for="itemDate">Meeting date</label><input id="itemDate" name="date" type="date"><label for="itemCategory">Meeting type</label><input id="itemCategory" name="category" placeholder="e.g. Class officers meeting">`;
-  if (kind === "grades") fields += `<label for="itemCategory">Subject / grading period</label><input id="itemCategory" name="category" placeholder="e.g. General Mathematics — Q1">`;
-  extra.innerHTML = fields;
-  document.getElementById("itemForm").reset();
-  document.getElementById("modalBackdrop").classList.remove("hidden");
-  document.getElementById("itemTitle").focus();
-}
-function closeModal() { document.getElementById("modalBackdrop").classList.add("hidden"); }
-function exportData() {
-  const blob = new Blob([JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), data }, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a"); link.href = url; link.download = "classroom-dashboard-backup.json"; link.click();
-  URL.revokeObjectURL(url);
-}
-function importData(file) {
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = JSON.parse(reader.result);
-      const imported = parsed.data || parsed;
-      if (!imported || typeof imported !== "object" || !Array.isArray(imported.announcements)) throw new Error("Invalid backup format");
-      const merged = { ...structuredClone(defaultData), ...imported };
-      for (const key of Object.keys(defaultData)) if (!Array.isArray(merged[key])) merged[key] = [];
-      if (!confirm("Import this backup and replace the current local records?")) return;
-      data = merged; saveData(); renderPage(); alert("Backup imported.");
-    } catch { alert("Could not import this file. Please select a valid dashboard JSON backup."); }
-    document.getElementById("importFile").value = "";
-  };
-  reader.readAsText(file);
-}
-function bindPageActions() {
-  document.querySelectorAll("[data-go]").forEach(btn => btn.addEventListener("click", () => setPage(btn.dataset.go)));
-  document.querySelectorAll("[data-add]").forEach(btn => btn.addEventListener("click", () => openModal(btn.dataset.add)));
-  document.querySelectorAll("[data-delete]").forEach(btn => btn.addEventListener("click", () => {
-    const kind = btn.dataset.delete, id = btn.dataset.id;
-    if (confirm("Delete this item? This cannot be undone.")) { data[kind] = all(kind).filter(item => item.id !== id); saveData(); renderPage(); }
-  }));
-  const search = document.getElementById("listSearch");
-  if (search) search.addEventListener("input", () => {
-    const query = search.value.toLowerCase();
-    const matches = all(currentPage === "calendar" ? "events" : currentPage).filter(item => JSON.stringify(item).toLowerCase().includes(query));
-    document.getElementById("itemsContainer").innerHTML = matches.length ? matches.map(item => `<article class="item-card"><div class="item-card-top"><div><h3>${escapeHTML(item.title)}</h3><p>${escapeHTML(item.details || "")}</p><div class="item-meta">${item.date ? dateLabel(item.date) : ""}</div></div><button class="delete-button" data-delete="${currentPage === "calendar" ? "events" : currentPage}" data-id="${escapeHTML(item.id)}">×</button></div></article>`).join("") : empty("No matching items.", "Try another search.");
-    document.querySelectorAll("[data-delete]").forEach(btn => btn.addEventListener("click", () => { const k=btn.dataset.delete; if(confirm("Delete this item?")) { data[k]=all(k).filter(x=>x.id!==btn.dataset.id); saveData(); renderPage(); }}));
-  });
-  const settingsTheme = document.getElementById("settingsTheme");
-  if (settingsTheme) settingsTheme.addEventListener("click", toggleTheme);
-  const exportButton = document.getElementById("exportButton");
-  if (exportButton) exportButton.addEventListener("click", exportData);
-  const importButton = document.getElementById("importButton");
-  if (importButton) importButton.addEventListener("click", () => document.getElementById("importFile").click());
-  const resetButton = document.getElementById("resetButton");
-  if (resetButton) resetButton.addEventListener("click", () => {
-    if (confirm("Reset all local dashboard records? This cannot be undone unless you have a backup.")) { data = structuredClone(defaultData); saveData(); renderPage(); }
-  });
-}
-function toggleTheme() {
-  document.body.classList.toggle("dark");
-  localStorage.setItem("classroom-dashboard-theme", document.body.classList.contains("dark") ? "dark" : "light");
-}
-document.getElementById("navigation").addEventListener("click", event => {
-  const btn = event.target.closest("[data-page]");
-  if (btn) setPage(btn.dataset.page);
-});
-document.getElementById("quickAddButton").addEventListener("click", () => openModal(currentPage === "calendar" ? "events" : currentPage === "assignments" ? "assignments" : currentPage === "resources" ? "resources" : currentPage === "announcements" ? "announcements" : "announcements"));
-document.getElementById("itemForm").addEventListener("submit", event => { event.preventDefault(); addItem(currentKind, new FormData(event.currentTarget)); });
-document.getElementById("closeModal").addEventListener("click", closeModal);
-document.getElementById("cancelModal").addEventListener("click", closeModal);
-document.getElementById("modalBackdrop").addEventListener("click", event => { if (event.target.id === "modalBackdrop") closeModal(); });
-document.getElementById("themeButton").addEventListener("click", toggleTheme);
-document.getElementById("menuButton").addEventListener("click", () => document.getElementById("sidebar").classList.toggle("open"));
-document.getElementById("importFile").addEventListener("change", event => { if (event.target.files[0]) importData(event.target.files[0]); });
-document.getElementById("todayLabel").textContent = new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-if (localStorage.getItem("classroom-dashboard-theme") === "dark") document.body.classList.add("dark");
-setPage("dashboard");
+function exportData(){let a=document.createElement("a"),url=URL.createObjectURL(new Blob([JSON.stringify({version:2,data:db},null,2)],{type:"application/json"}));a.href=url;a.download="visionaries-classroom-backup.json";a.click();URL.revokeObjectURL(url)}
+document.getElementById("importFile").onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let p=JSON.parse(r.result),x=p.data||p;if(!x.settings||!Array.isArray(x.subjects))throw Error();if(confirm("Replace local data with this backup?")){db={...clone(defaults),...x,settings:{...defaults.settings,...x.settings}};save();setPage("dashboard")}}catch{alert("Invalid backup file.")}e.target.value=""};r.readAsText(f)};
+document.getElementById("form").onsubmit=e=>{e.preventDefault();let o=Object.fromEntries(new FormData(e.target));if(kind==="officer")db.officers[editIndex]={...db.officers[editIndex],...o};else{if(kind==="inventory")o.quantity=Number(o.quantity||1);o.id=id();db[kind].push(o)}save();document.getElementById("shade").classList.add("hidden");render()};
+function close(){document.getElementById("shade").classList.add("hidden")}document.getElementById("close").onclick=close;document.getElementById("cancel").onclick=close;document.getElementById("shade").onclick=e=>{if(e.target.id==="shade")close()};
+document.getElementById("nav").innerHTML=nav.map(([p,ic])=>`<button class="nav ${p==="dashboard"?"active":""}" data-page="${p}">${ic}　${pages[p][0]}</button>`).join("");document.getElementById("nav").onclick=e=>{let b=e.target.closest("[data-page]");if(b)setPage(b.dataset.page)};
+document.getElementById("quick").onclick=()=>open(({calendar:"events",tasks:"tasks",announcements:"announcements",roster:"roster",governance:"resolutions",inventory:"inventory"})[page]||"tasks");
+document.getElementById("theme").onclick=()=>{db.settings.theme=db.settings.theme==="dark"?"light":"dark";document.body.classList.toggle("dark",db.settings.theme==="dark");save()};document.getElementById("menu").onclick=()=>document.getElementById("sidebar").classList.toggle("open");document.getElementById("today").textContent=new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});document.body.classList.toggle("dark",db.settings.theme==="dark");setPage("dashboard");
