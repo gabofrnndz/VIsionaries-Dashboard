@@ -1,4 +1,4 @@
 import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
-// base './' keeps assets working under any GitHub Pages repo subpath
-export default defineConfig({plugins:[react()],base:'./'});
+// base './' + outDir 'docs' works with Pages "Deploy from branch /docs" or GitHub Actions
+export default defineConfig({plugins:[react()],base:'./',build:{outDir:'docs',emptyOutDir:true}});

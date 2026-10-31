@@ -2,7 +2,7 @@ import {useState} from 'react';
 import {useLocal,uid} from './store';
 export type F={n:string;label:string;t?:string;opts?:string[];def?:any};
 export function Crud({k,fields,seed=[],sort,extra,empty='Nothing here yet. Use Add to create the first entry.',addLabel='Add entry'}:{k:string;fields:F[];seed?:any[];sort?:(a:any,b:any)=>number;extra?:(i:any)=>any;empty?:string;addLabel?:string}){
-  const [items,setItems]=useLocal<any[]>(k,seed);
+  const [raw,setItems]=useLocal<any[]>(k,seed);const items=Array.isArray(raw)?raw:[];
   const blank=()=>Object.fromEntries(fields.map(f=>[f.n,f.def??(f.opts?f.opts[0]:f.t==='check'?false:'')]));
   const [f,setF]=useState<any>(null);const [err,setErr]=useState('');
   const save=()=>{const first=fields[0];if(!String(f[first.n]||'').trim()){setErr(first.label+' is required.');return}
