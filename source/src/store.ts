@@ -25,3 +25,13 @@ export const SEED_EVENTS=[e('2026-11-02','No classes','No Class'),e('2026-11-04'
 export const SEED_NOTES='Environmental Literacy (100 days) until Dec. 25\nStart: Sept. 17\nOct. 30\nLCS – Pathways\nMK – ST #2\nGen. Math – LAS #6';
 export const SEED_SUBJECTS=['LCS','General Science','General Mathematics','MK'].map((name,i)=>({id:'sub'+i,name,teacher:'',schedule:''}));
 export const SEED_COMMITTEES=COMMITTEES.map((name,i)=>({id:'c'+i,name:name+' Committee',chair:'',members:'',duties:''}));
+export const DEF:any={name:'Grade 11 – Visionaries',sub:'ICT-CSS & ASSH | School Year 2026–2027',school:'',adviser:'',theme:'light',accent:'#2f5bea',font:'Arial',density:'comfortable',dateFmt:'long',defaultPage:'dashboard',
+ t1s:'2026-06-08',t1e:'2026-09-15',t2s:'2026-09-16',t2e:'2026-12-18',t3s:'2027-01-04',t3e:'2027-04-08',
+ wWW:20,wPT:50,wEX:30,pass:75,trans:'adjusted',bulletin:'https://gabofrnndz.github.io/11-visionaries-weather-bulletin/',
+ widgets:{terms:true,events:true,announcements:true,deadlines:true,hazard:true}};
+export const useSettings=():[any,(v:any)=>void]=>{const [s,set]=useLocal<any>('settings',DEF);const o=s||{};return [{...DEF,...o,widgets:{...DEF.widgets,...(o.widgets||{})}},set]};
+export const fmtDate=(d:string,f='long')=>{if(!d)return '';const x=new Date(d+'T00:00');return f==='iso'?d:x.toLocaleDateString('en-PH',f==='short'?{month:'short',day:'numeric',year:'numeric'}:{dateStyle:'full'})};
+export const termOf=(s:any,d:string)=>[1,2,3].find(n=>d>=s['t'+n+'s']&&d<=s['t'+n+'e'])||0;
+export const TASKT=['Assignment','Task','Performance Task','Submission Deadline'];
+// Approximation of the SY 2026-27 adjusted table (raw 70 -> 75). Verify against the official table / E-Class Record.
+export const transmute=(raw:number,mode:string)=>{if(mode==='off')return Math.round(raw);const r=Math.max(0,Math.min(100,raw));return Math.round(r>=70?75+(r-70)*(25/30):60+r*(15/70))};

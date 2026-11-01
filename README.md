@@ -9,3 +9,6 @@ Settings → Pages → **Deploy from a branch** → branch `main`, folder **/ (r
 Source is in `source/` (React + TypeScript + Vite). `cd source && npm install && npm run dev`. `npm run build` rewrites `index.html` and `assets/` in the repo root; commit them.
 
 Data is saved in the browser (localStorage) and does not sync across devices; use Settings → Export/Import JSON. Keep real grades, attendance and contact details out of the public repo.
+
+## Rebuild after editing source
+`cd source && npm install && npm run build` (writes `index.html` and `assets/` to the repo root).
