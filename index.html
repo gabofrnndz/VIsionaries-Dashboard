@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#173b66">
+  <title>eClass PH | Grade 11 Visionaries</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">V</div>
+        <div><strong>eClass PH</strong><small>VISIONARIES EDITION</small></div>
+      </div>
+      <div class="school-label">CLASSROOM MANAGEMENT</div>
+      <nav id="nav">
+        <button class="nav-item active" data-page="overview">▦ <span>Overview</span></button>
+        <button class="nav-item" data-page="students">♙ <span>Student Registry</span></button>
+        <button class="nav-item" data-page="attendance">✓ <span>Attendance</span></button>
+        <button class="nav-item" data-page="government">⚖ <span>Class Government</span></button>
+        <button class="nav-item" data-page="committees">▤ <span>Committees</span></button>
+        <button class="nav-item" data-page="academics">▣ <span>Academics</span></button>
+        <button class="nav-item" data-page="calendar">▦ <span>Calendar & Notices</span></button>
+        <button class="nav-item" data-page="finance">₱ <span>Finance & Property</span></button>
+        <button class="nav-item" data-page="operations">⌂ <span>Classroom Operations</span></button>
+        <button class="nav-item" data-page="constitution">≡ <span>Constitution & Rules</span></button>
+        <button class="nav-item" data-page="reports">▥ <span>Reports & Data</span></button>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="status-dot"></span> Offline-ready · Browser storage
+        <small>School Year 2026–2027</small>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <button class="mobile-menu" id="menuBtn" aria-label="Toggle navigation">☰</button>
+        <div><div class="eyebrow">GRADE 11 / CLASSROOM PORTAL</div><h1 id="pageTitle">Overview</h1></div>
+        <div class="top-actions"><span class="sy-pill">SY 2026–2027</span><button class="btn btn-light" id="exportTop">Export data</button></div>
+      </header>
+      <section class="content" id="content" aria-live="polite"></section>
+      <footer>eClass PH · Grade 11 – Visionaries · A classroom management workspace</footer>
+    </main>
+  </div>
+  <dialog id="modal"><form method="dialog" id="modalForm"><div class="modal-head"><h2 id="modalTitle">Add record</h2><button class="icon-btn" value="cancel" aria-label="Close">×</button></div><div id="modalBody"></div><div class="modal-actions"><button class="btn btn-light" value="cancel">Cancel</button><button class="btn btn-primary" id="modalSave" value="default">Save record</button></div></form></dialog>
+  <input type="file" id="importFile" accept="application/json" hidden>
+  <script src="app.js"></script>
+</body>
+</html>
